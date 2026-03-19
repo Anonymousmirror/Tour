@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src=no --import-alias \"@/*\" --use-npm)",
+      "Read(//d/claude_code_project/**)",
+      "Bash(npx create-next-app@latest tour-temp --typescript --tailwind --eslint --app --src=no --import-alias \"@/*\" --use-npm)",
+      "Bash(npx create-next-app@latest tour-temp --typescript --tailwind --eslint --app --src=no --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(cd:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(taskkill:*)",
+      "Bash(echo $HOME)",
+      "Read(//d/claude_code_project/Tour/$HOME/.claude/plugins/cache/claude-hud/claude-hud/**)",
+      "Bash(sort -t. -k1,1n -k2,2n -k3,3n -k4,4n)",
+      "Bash(command -v bun)",
+      "Bash(command -v node)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -o \"\"text\"\":\"\"[^\"\"]*12[^\"\"]*\"\" C:/Users/Yaozeyuan/.claude/projects/D--claude-code-project-Tour/b0872e2a-9cec-4afc-944c-8c7433541f2f.jsonl)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(gh --version)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}
