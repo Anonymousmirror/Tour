@@ -69,6 +69,7 @@ export default async function AdminPage({
                 <div className="shrink-0 text-right">
                   <p className="text-xs text-white/30">
                     {new Date(sub.createdAt).toLocaleString("zh-CN", {
+                      timeZone: "Asia/Shanghai",
                       month: "2-digit",
                       day: "2-digit",
                       hour: "2-digit",

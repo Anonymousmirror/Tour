@@ -46,7 +46,7 @@ export default async function AdminDetailPage({
           <div className="text-right shrink-0">
             <p className="text-xs text-white/30">提交时间</p>
             <p className="text-sm text-white/50">
-              {new Date(submission.createdAt).toLocaleString("zh-CN")}
+              {new Date(submission.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}
             </p>
             <p className="text-xs text-white/20 mt-1 font-mono">{submission.id}</p>
           </div>
