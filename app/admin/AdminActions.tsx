@@ -21,7 +21,11 @@ export function DeleteOneButton({ id }: { id: string }) {
 
   return (
     <button
-      onClick={handleDelete}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDelete();
+      }}
       disabled={pending}
       className="text-xs text-red-400/60 hover:text-red-400 transition-colors disabled:opacity-30"
     >

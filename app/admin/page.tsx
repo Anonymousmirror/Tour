@@ -83,9 +83,7 @@ export default async function AdminPage({
                   <p className="text-xs text-white/20 font-mono">
                     {sub.id.slice(0, 8)}
                   </p>
-                  <div onClick={(e) => e.preventDefault()}>
-                    <DeleteOneButton id={sub.id} />
-                  </div>
+                  <DeleteOneButton id={sub.id} />
                 </div>
               </div>
             </Link>
