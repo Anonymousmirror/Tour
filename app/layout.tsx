@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, LXGW_WenKai_TC } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const lxgwWenKai = LXGW_WenKai_TC({
+  weight: ["300", "400", "700"],
+  subsets: ["latin"],
+  variable: "--font-lxgw",
   display: "swap",
 });
 
@@ -27,7 +34,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta httpEquiv="Content-Language" content="zh-CN" />
       </head>
-      <body className={`${inter.variable} antialiased min-h-screen`}>
+      <body className={`${inter.variable} ${lxgwWenKai.variable} antialiased min-h-screen`}>
         <div
           className="fixed inset-0 -z-10"
           style={{
