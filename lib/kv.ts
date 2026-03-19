@@ -18,27 +18,49 @@ function findEnvVar(...candidates: string[]): string | undefined {
   return undefined;
 }
 
-const redisUrl = findEnvVar(
+/**
+ * Parse REDIS_URL (rediss://default:TOKEN@HOST:PORT) into REST API credentials.
+ * Upstash REST API is available at https://HOST with the password as token.
+ */
+function parseRedisUrl(url: string): { restUrl: string; restToken: string } | null {
+  try {
+    // rediss://default:PASSWORD@host.upstash.io:6379
+    const parsed = new URL(url);
+    const token = parsed.password;
+    const host = parsed.hostname;
+    if (!token || !host) return null;
+    return { restUrl: `https://${host}`, restToken: token };
+  } catch {
+    return null;
+  }
+}
+
+// Try explicit REST env vars first, then parse from REDIS_URL
+let redisUrl = findEnvVar(
   "KV_REST_API_URL",
-  "STORAGE_KV_REST_API_URL",
   "UPSTASH_REDIS_REST_URL",
-  "STORAGE_UPSTASH_REDIS_REST_URL",
-  "REDIS_REST_URL",
-  "STORAGE_REST_URL",
-  "KV_URL",
-  "STORAGE_URL"
+  "STORAGE_KV_REST_API_URL",
+  "REDIS_REST_URL"
 );
 
-const redisToken = findEnvVar(
+let redisToken = findEnvVar(
   "KV_REST_API_TOKEN",
-  "STORAGE_KV_REST_API_TOKEN",
   "UPSTASH_REDIS_REST_TOKEN",
-  "STORAGE_UPSTASH_REDIS_REST_TOKEN",
-  "REDIS_REST_TOKEN",
-  "STORAGE_REST_TOKEN",
-  "KV_TOKEN",
-  "STORAGE_TOKEN"
+  "STORAGE_KV_REST_API_TOKEN",
+  "REDIS_REST_TOKEN"
 );
+
+// Fallback: derive REST credentials from REDIS_URL
+if (!redisUrl || !redisToken) {
+  const rawUrl = findEnvVar("REDIS_URL", "STORAGE_REDIS_URL", "KV_URL");
+  if (rawUrl) {
+    const parsed = parseRedisUrl(rawUrl);
+    if (parsed) {
+      redisUrl = parsed.restUrl;
+      redisToken = parsed.restToken;
+    }
+  }
+}
 
 const hasRedis = !!(redisUrl && redisToken);
 
