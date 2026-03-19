@@ -28,9 +28,9 @@
   --color-text-secondary: rgba(245, 240, 235, 0.65);
   --color-text-muted: rgba(245, 240, 235, 0.4);
 
-  /* Fonts — loaded via next/font/google (self-hosted, no external requests) */
-  --font-body: var(--font-lxgw), var(--font-inter), sans-serif;
-  --font-ui: var(--font-inter), var(--font-lxgw), sans-serif;
+  /* Fonts — Inter self-hosted via next/font, Chinese uses system fonts */
+  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", var(--font-inter), sans-serif;
+  --font-ui: var(--font-inter), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 /* Noise texture */
