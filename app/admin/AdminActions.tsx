@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function DeleteOneButton({ id }: { id: string }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function handleDelete() {
@@ -12,9 +10,14 @@ export function DeleteOneButton({ id }: { id: string }) {
     setPending(true);
     try {
       const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
-      if (res.ok) router.refresh();
-      else alert("删除失败");
-    } finally {
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert("删除失败");
+        setPending(false);
+      }
+    } catch {
+      alert("网络错误，请重试");
       setPending(false);
     }
   }
@@ -35,7 +38,6 @@ export function DeleteOneButton({ id }: { id: string }) {
 }
 
 export function DeleteAllButton({ count }: { count: number }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function handleDeleteAll() {
@@ -43,9 +45,14 @@ export function DeleteAllButton({ count }: { count: number }) {
     setPending(true);
     try {
       const res = await fetch("/api/submissions", { method: "DELETE" });
-      if (res.ok) router.refresh();
-      else alert("清空失败");
-    } finally {
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert("清空失败");
+        setPending(false);
+      }
+    } catch {
+      alert("网络错误，请重试");
       setPending(false);
     }
   }
