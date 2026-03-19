@@ -123,3 +123,47 @@ export async function countSubmissions(): Promise<number> {
     return memList.length;
   }
 }
+
+export async function deleteSubmission(id: string): Promise<boolean> {
+  const key = `submission:${id}`;
+
+  if (hasRedis) {
+    try {
+      const redis = getRedis();
+      await redis.del(key);
+      await redis.zrem("submissions", id);
+      return true;
+    } catch (err) {
+      console.error("[kv] deleteSubmission Redis error:", err);
+      return false;
+    }
+  } else {
+    memStore.delete(key);
+    const idx = memList.findIndex((e) => e.id === id);
+    if (idx !== -1) memList.splice(idx, 1);
+    return true;
+  }
+}
+
+export async function deleteAllSubmissions(): Promise<number> {
+  if (hasRedis) {
+    try {
+      const redis = getRedis();
+      const ids = await redis.zrange("submissions", 0, -1);
+      if (ids.length > 0) {
+        const keys = ids.map((id) => `submission:${id}`);
+        await redis.del(...keys);
+        await redis.del("submissions");
+      }
+      return ids.length;
+    } catch (err) {
+      console.error("[kv] deleteAllSubmissions Redis error:", err);
+      return 0;
+    }
+  } else {
+    const count = memList.length;
+    memStore.clear();
+    memList.length = 0;
+    return count;
+  }
+}

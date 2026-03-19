@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveSubmission, listSubmissions, countSubmissions } from "@/lib/kv";
+import { saveSubmission, listSubmissions, countSubmissions, deleteAllSubmissions } from "@/lib/kv";
 import type { Submission } from "@/lib/submission-types";
 
 // POST /api/submissions — save a new submission
@@ -47,6 +47,16 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({ submissions, total, offset, limit });
+  } catch {
+    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+  }
+}
+
+// DELETE /api/submissions — delete all submissions
+export async function DELETE() {
+  try {
+    const count = await deleteAllSubmissions();
+    return NextResponse.json({ ok: true, deleted: count });
   } catch {
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });
   }

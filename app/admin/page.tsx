@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listSubmissions, countSubmissions, getConnectionInfo } from "@/lib/kv";
+import { DeleteOneButton, DeleteAllButton } from "./AdminActions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +26,16 @@ export default async function AdminPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white/90">提交记录</h1>
-        <div className="text-right">
-          <span className="text-sm text-white/40">
-            共 {total} 条记录
-          </span>
-          <p className="text-xs text-white/20 mt-0.5">
-            {connInfo.hasRedis ? "🟢 Redis" : "🟡 内存模式"}
-          </p>
+        <div className="flex items-center gap-4">
+          <DeleteAllButton count={total} />
+          <div className="text-right">
+            <span className="text-sm text-white/40">
+              共 {total} 条记录
+            </span>
+            <p className="text-xs text-white/20 mt-0.5">
+              {connInfo.hasRedis ? "🟢 Redis" : "🟡 内存模式"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -66,7 +70,7 @@ export default async function AdminPage({
                     </p>
                   )}
                 </div>
-                <div className="shrink-0 text-right">
+                <div className="shrink-0 text-right space-y-1">
                   <p className="text-xs text-white/30">
                     {new Date(sub.createdAt).toLocaleString("zh-CN", {
                       timeZone: "Asia/Shanghai",
@@ -76,9 +80,12 @@ export default async function AdminPage({
                       minute: "2-digit",
                     })}
                   </p>
-                  <p className="text-xs text-white/20 mt-1 font-mono">
+                  <p className="text-xs text-white/20 font-mono">
                     {sub.id.slice(0, 8)}
                   </p>
+                  <div onClick={(e) => e.preventDefault()}>
+                    <DeleteOneButton id={sub.id} />
+                  </div>
                 </div>
               </div>
             </Link>
