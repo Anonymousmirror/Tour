@@ -30,7 +30,7 @@ export default async function AdminPage({
             共 {total} 条记录
           </span>
           <p className="text-xs text-white/20 mt-0.5">
-            {connInfo.hasRedis ? "🟢 Redis" : "🟡 内存模式"} · token长度:{connInfo.tokenLen}
+            {connInfo.hasRedis ? "🟢 Redis" : "🟡 内存模式"}
           </p>
         </div>
       </div>

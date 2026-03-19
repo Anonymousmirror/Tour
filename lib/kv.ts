@@ -1,93 +1,43 @@
 import type { Submission } from "./submission-types";
+import Redis from "ioredis";
 
 /**
  * Redis storage with in-memory fallback for local development.
  *
- * On Vercel: uses @upstash/redis via environment variables.
- * Supports multiple env var naming conventions (Upstash integration may use
- * different prefixes like KV_, STORAGE_, or REDIS_).
+ * On Vercel: uses ioredis via REDIS_URL (standard Redis protocol, works with
+ * any provider: Redis Cloud, Upstash, self-hosted, etc.)
  * Locally without env vars: uses in-memory Map (resets on server restart).
  */
 
-// ---------- Detect Redis env vars ----------
+// ---------- Redis connection ----------
 
-function findEnvVar(...candidates: string[]): string | undefined {
-  for (const name of candidates) {
-    if (process.env[name]) return process.env[name];
-  }
-  return undefined;
-}
+const redisUrl = process.env.REDIS_URL;
+const hasRedis = !!redisUrl;
 
-/**
- * Parse REDIS_URL (rediss://default:TOKEN@HOST:PORT) into REST API credentials.
- * Upstash REST API is available at https://HOST with the password as token.
- */
-function parseRedisUrl(url: string): { restUrl: string; restToken: string } | null {
-  try {
-    // rediss://default:PASSWORD@host.upstash.io:6379
-    const parsed = new URL(url);
-    const token = parsed.password;
-    const host = parsed.hostname;
-    if (!token || !host) return null;
-    return { restUrl: `https://${host}`, restToken: token };
-  } catch {
-    return null;
-  }
-}
+let redisInstance: Redis | null = null;
 
-// Try explicit REST env vars first, then parse from REDIS_URL
-let redisUrl = findEnvVar(
-  "KV_REST_API_URL",
-  "UPSTASH_REDIS_REST_URL",
-  "STORAGE_KV_REST_API_URL",
-  "REDIS_REST_URL"
-);
-
-let redisToken = findEnvVar(
-  "KV_REST_API_TOKEN",
-  "UPSTASH_REDIS_REST_TOKEN",
-  "STORAGE_KV_REST_API_TOKEN",
-  "REDIS_REST_TOKEN"
-);
-
-// Fallback: derive REST credentials from REDIS_URL
-if (!redisUrl || !redisToken) {
-  const rawUrl = findEnvVar("REDIS_URL", "STORAGE_REDIS_URL", "KV_URL");
-  if (rawUrl) {
-    const parsed = parseRedisUrl(rawUrl);
-    if (parsed) {
-      redisUrl = parsed.restUrl;
-      redisToken = parsed.restToken;
-    }
-  }
-}
-
-const hasRedis = !!(redisUrl && redisToken);
-
-// ---------- In-memory fallback ----------
-const memStore = new Map<string, string>();
-const memList: { id: string; score: number }[] = [];
-
-// ---------- Redis client ----------
-
-let redisInstance: unknown = null;
-
-async function getRedis() {
+function getRedis(): Redis {
   if (!redisInstance) {
-    const { Redis } = await import("@upstash/redis");
-    redisInstance = new Redis({ url: redisUrl!, token: redisToken! });
+    redisInstance = new Redis(redisUrl!, {
+      maxRetriesPerRequest: 2,
+      connectTimeout: 5000,
+      lazyConnect: true,
+    });
   }
-  return redisInstance as import("@upstash/redis").Redis;
+  return redisInstance;
 }
 
 /** Diagnostic info for debugging connection issues */
 export function getConnectionInfo() {
   return {
     hasRedis,
-    redisUrl: redisUrl ? `${redisUrl.slice(0, 20)}...` : "NOT SET",
-    tokenLen: redisToken?.length ?? 0,
+    redisUrl: redisUrl ? `${redisUrl.slice(0, 30)}...` : "NOT SET",
   };
 }
+
+// ---------- In-memory fallback ----------
+const memStore = new Map<string, string>();
+const memList: { id: string; score: number }[] = [];
 
 // ---------- Public API ----------
 
@@ -98,12 +48,11 @@ export async function saveSubmission(submission: Submission): Promise<void> {
 
   if (hasRedis) {
     try {
-      const redis = await getRedis();
+      const redis = getRedis();
       await redis.set(key, json);
-      await redis.zadd("submissions", { score, member: submission.id });
+      await redis.zadd("submissions", score.toString(), submission.id);
     } catch (err) {
       console.error("[kv] saveSubmission Redis error:", err);
-      // Fall back to memory so data isn't lost
       memStore.set(key, json);
       memList.push({ id: submission.id, score });
       memList.sort((a, b) => b.score - a.score);
@@ -120,10 +69,10 @@ export async function getSubmission(id: string): Promise<Submission | null> {
 
   if (hasRedis) {
     try {
-      const redis = await getRedis();
-      const data = await redis.get<string>(key);
+      const redis = getRedis();
+      const data = await redis.get(key);
       if (!data) return null;
-      return typeof data === "string" ? JSON.parse(data) : data as unknown as Submission;
+      return JSON.parse(data);
     } catch (err) {
       console.error("[kv] getSubmission Redis error:", err);
       return null;
@@ -143,8 +92,8 @@ export async function listSubmissions(
 
   if (hasRedis) {
     try {
-      const redis = await getRedis();
-      ids = await redis.zrange("submissions", offset, offset + limit - 1, { rev: true });
+      const redis = getRedis();
+      ids = await redis.zrevrange("submissions", offset, offset + limit - 1);
     } catch (err) {
       console.error("[kv] listSubmissions Redis error:", err);
       ids = [];
@@ -164,7 +113,7 @@ export async function listSubmissions(
 export async function countSubmissions(): Promise<number> {
   if (hasRedis) {
     try {
-      const redis = await getRedis();
+      const redis = getRedis();
       return await redis.zcard("submissions");
     } catch (err) {
       console.error("[kv] countSubmissions Redis error:", err);
