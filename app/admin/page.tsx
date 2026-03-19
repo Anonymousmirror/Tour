@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listSubmissions, countSubmissions } from "@/lib/kv";
+import { listSubmissions, countSubmissions, getConnectionInfo } from "@/lib/kv";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,7 @@ export default async function AdminPage({
   const resolvedParams = await searchParams;
   const offset = parseInt(resolvedParams.offset || "0", 10);
   const limit = 20;
+  const connInfo = getConnectionInfo();
 
   const [submissions, total] = await Promise.all([
     listSubmissions(offset, limit),
@@ -24,9 +25,14 @@ export default async function AdminPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white/90">提交记录</h1>
-        <span className="text-sm text-white/40">
-          共 {total} 条记录
-        </span>
+        <div className="text-right">
+          <span className="text-sm text-white/40">
+            共 {total} 条记录
+          </span>
+          <p className="text-xs text-white/20 mt-0.5">
+            {connInfo.hasRedis ? "🟢 Redis" : "🟡 内存模式"} · token长度:{connInfo.tokenLen}
+          </p>
+        </div>
       </div>
 
       {submissions.length === 0 ? (

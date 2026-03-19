@@ -70,9 +70,23 @@ const memList: { id: string; score: number }[] = [];
 
 // ---------- Redis client ----------
 
+let redisInstance: unknown = null;
+
 async function getRedis() {
-  const { Redis } = await import("@upstash/redis");
-  return new Redis({ url: redisUrl!, token: redisToken! });
+  if (!redisInstance) {
+    const { Redis } = await import("@upstash/redis");
+    redisInstance = new Redis({ url: redisUrl!, token: redisToken! });
+  }
+  return redisInstance as import("@upstash/redis").Redis;
+}
+
+/** Diagnostic info for debugging connection issues */
+export function getConnectionInfo() {
+  return {
+    hasRedis,
+    redisUrl: redisUrl ? `${redisUrl.slice(0, 20)}...` : "NOT SET",
+    tokenLen: redisToken?.length ?? 0,
+  };
 }
 
 // ---------- Public API ----------
@@ -83,9 +97,17 @@ export async function saveSubmission(submission: Submission): Promise<void> {
   const score = new Date(submission.createdAt).getTime();
 
   if (hasRedis) {
-    const redis = await getRedis();
-    await redis.set(key, json);
-    await redis.zadd("submissions", { score, member: submission.id });
+    try {
+      const redis = await getRedis();
+      await redis.set(key, json);
+      await redis.zadd("submissions", { score, member: submission.id });
+    } catch (err) {
+      console.error("[kv] saveSubmission Redis error:", err);
+      // Fall back to memory so data isn't lost
+      memStore.set(key, json);
+      memList.push({ id: submission.id, score });
+      memList.sort((a, b) => b.score - a.score);
+    }
   } else {
     memStore.set(key, json);
     memList.push({ id: submission.id, score });
@@ -97,10 +119,15 @@ export async function getSubmission(id: string): Promise<Submission | null> {
   const key = `submission:${id}`;
 
   if (hasRedis) {
-    const redis = await getRedis();
-    const data = await redis.get<string>(key);
-    if (!data) return null;
-    return typeof data === "string" ? JSON.parse(data) : data as unknown as Submission;
+    try {
+      const redis = await getRedis();
+      const data = await redis.get<string>(key);
+      if (!data) return null;
+      return typeof data === "string" ? JSON.parse(data) : data as unknown as Submission;
+    } catch (err) {
+      console.error("[kv] getSubmission Redis error:", err);
+      return null;
+    }
   } else {
     const json = memStore.get(key);
     if (!json) return null;
@@ -115,8 +142,13 @@ export async function listSubmissions(
   let ids: string[];
 
   if (hasRedis) {
-    const redis = await getRedis();
-    ids = await redis.zrange("submissions", offset, offset + limit - 1, { rev: true });
+    try {
+      const redis = await getRedis();
+      ids = await redis.zrange("submissions", offset, offset + limit - 1, { rev: true });
+    } catch (err) {
+      console.error("[kv] listSubmissions Redis error:", err);
+      ids = [];
+    }
   } else {
     ids = memList.slice(offset, offset + limit).map((e) => e.id);
   }
@@ -131,8 +163,13 @@ export async function listSubmissions(
 
 export async function countSubmissions(): Promise<number> {
   if (hasRedis) {
-    const redis = await getRedis();
-    return await redis.zcard("submissions");
+    try {
+      const redis = await getRedis();
+      return await redis.zcard("submissions");
+    } catch (err) {
+      console.error("[kv] countSubmissions Redis error:", err);
+      return 0;
+    }
   } else {
     return memList.length;
   }
