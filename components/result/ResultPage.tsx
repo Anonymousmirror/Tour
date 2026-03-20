@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { RotateCcw, CloudSun, Loader2 } from "lucide-react";
 import { useSurveyStore } from "@/lib/store";
 import { generatePrompt } from "@/lib/prompt-generator";
-import { getWeatherForTrip, formatWeatherForPrompt } from "@/lib/weather";
+import { formatWeatherForPrompt, type WeatherResult } from "@/lib/weather";
 import SummaryCard from "./SummaryCard";
 import PromptDisplay from "./PromptDisplay";
 
@@ -46,7 +46,18 @@ export default function ResultPage({ isAdmin = false }: ResultPageProps) {
       return;
     }
 
-    getWeatherForTrip(city, startDate, endDate)
+    const params = new URLSearchParams({ city, startDate, endDate });
+
+    fetch(`/api/weather?${params.toString()}`, {
+      method: "GET",
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`weather_api_${res.status}`);
+        }
+        return (await res.json()) as WeatherResult;
+      })
       .then((result) => {
         const text = formatWeatherForPrompt(result);
         setWeatherContext(text);
