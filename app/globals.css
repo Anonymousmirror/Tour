@@ -33,19 +33,6 @@
   --font-ui: var(--font-inter), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-/* Noise texture */
-@keyframes noise {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-1px, -1px); }
-  20% { transform: translate(1px, 0); }
-  30% { transform: translate(0, 1px); }
-  40% { transform: translate(-1px, 0); }
-  50% { transform: translate(1px, 1px); }
-  60% { transform: translate(0, -1px); }
-  70% { transform: translate(-1px, 1px); }
-  80% { transform: translate(1px, -1px); }
-  90% { transform: translate(0, 0); }
-}
 
 @keyframes shimmer {
   0% { background-position: -200% center; }
@@ -70,12 +57,12 @@ body {
   position: relative;
 }
 
-/* Subtle noise texture overlay */
+/* Subtle noise texture overlay — lightweight CSS gradient instead of SVG filter */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 180px;
   pointer-events: none;
@@ -102,25 +89,6 @@ body::before {
   background: rgba(249, 115, 22, 0.7);
 }
 
-/* Smooth global transitions */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color, opacity, box-shadow, transform;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Override transition for animated elements (framer-motion handles those) */
-[data-framer-motion] {
-  transition: none !important;
-}
-
-/* Glass morphism utility */
-.glass {
-  background: var(--color-bg-card);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid var(--color-border);
-}
 
 /* Shimmer animation utility */
 .shimmer {

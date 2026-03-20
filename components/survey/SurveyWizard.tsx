@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, SkipForward, Sparkles } from "lucide-react";
 import { useSurveyStore } from "@/lib/store";
@@ -8,15 +9,30 @@ import { STEPS } from "@/lib/survey-config";
 import { cn } from "@/lib/utils";
 import ProgressBar from "./ProgressBar";
 
+// First step is statically imported (needed for initial render)
 import StepBasicInfo from "./StepBasicInfo";
-import StepCompanion from "./StepCompanion";
-import StepTransport from "./StepTransport";
-import StepStyle from "./StepStyle";
-import StepDining from "./StepDining";
-import StepAttractions from "./StepAttractions";
-import StepAccommodation from "./StepAccommodation";
-import StepBudget from "./StepBudget";
-import ResultPage from "@/components/result/ResultPage";
+
+// Remaining steps are dynamically imported to reduce initial JS bundle
+const StepCompanion = dynamic(() => import("./StepCompanion"), { ssr: false });
+const StepTransport = dynamic(() => import("./StepTransport"), { ssr: false });
+const StepStyle = dynamic(() => import("./StepStyle"), { ssr: false });
+const StepDining = dynamic(() => import("./StepDining"), { ssr: false });
+const StepAttractions = dynamic(() => import("./StepAttractions"), { ssr: false });
+const StepAccommodation = dynamic(() => import("./StepAccommodation"), { ssr: false });
+const StepBudget = dynamic(() => import("./StepBudget"), { ssr: false });
+const ResultPage = dynamic(() => import("@/components/result/ResultPage"), { ssr: false });
+
+// Preload map: step number -> import function for next step
+const preloadMap: Record<number, () => void> = {
+  1: () => import("./StepCompanion"),
+  2: () => import("./StepTransport"),
+  3: () => import("./StepStyle"),
+  4: () => import("./StepDining"),
+  5: () => import("./StepAttractions"),
+  6: () => import("./StepAccommodation"),
+  7: () => import("./StepBudget"),
+  8: () => import("@/components/result/ResultPage"),
+};
 
 const TOTAL_STEPS = STEPS.length; // 8
 
@@ -45,6 +61,12 @@ export default function SurveyWizard() {
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preload the next step component after current step renders
+  useEffect(() => {
+    const preload = preloadMap[currentStep];
+    if (preload) preload();
+  }, [currentStep]);
 
   const isResultPage = currentStep === 9;
   const isFirstStep = currentStep === 1;
@@ -125,7 +147,7 @@ export default function SurveyWizard() {
       <div
         className={cn(
           "relative rounded-3xl overflow-hidden",
-          "bg-white/[0.04] backdrop-blur-xl",
+          "bg-white/[0.04] backdrop-blur-sm",
           "border border-white/10",
           "shadow-2xl shadow-black/40"
         )}
