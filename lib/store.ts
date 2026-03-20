@@ -203,6 +203,7 @@ export const useSurveyStore = create<SurveyStore>()(
     }),
     {
       name: "tour-survey-storage",
+      partialize: (state) => ({ data: state.data }),
     }
   )
 );

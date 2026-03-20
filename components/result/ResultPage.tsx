@@ -29,15 +29,18 @@ export default function ResultPage({ isAdmin = false }: ResultPageProps) {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherStatus, setWeatherStatus] = useState<"loading" | "success" | "fallback" | "error">("loading");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const weatherFetched = useRef(false);
   const submissionSent = useRef(false);
+
+  // Stable key for deduplication — only re-fetch when city/dates actually change
+  const weatherKey = `${data.basicInfo.city}|${data.basicInfo.startDate}|${data.basicInfo.endDate}`;
+  const lastWeatherKey = useRef("");
 
   const prompt = generatePrompt(data, weatherContext);
 
-  // Fetch weather on mount
+  // Fetch weather on mount (deduped by weatherKey)
   useEffect(() => {
-    if (weatherFetched.current) return;
-    weatherFetched.current = true;
+    if (weatherKey === lastWeatherKey.current) return;
+    lastWeatherKey.current = weatherKey;
 
     const { city, startDate, endDate } = data.basicInfo;
     if (!city || !startDate || !endDate) {
@@ -45,6 +48,9 @@ export default function ResultPage({ isAdmin = false }: ResultPageProps) {
       setWeatherStatus("error");
       return;
     }
+
+    setWeatherLoading(true);
+    setWeatherStatus("loading");
 
     const params = new URLSearchParams({ city, startDate, endDate });
 
@@ -73,7 +79,7 @@ export default function ResultPage({ isAdmin = false }: ResultPageProps) {
       .finally(() => {
         setWeatherLoading(false);
       });
-  }, [data.basicInfo]);
+  }, [weatherKey, data.basicInfo]);
 
   // Submit to backend after weather loads (prompt is finalized)
   useEffect(() => {
